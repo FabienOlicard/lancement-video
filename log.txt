@@ -1,0 +1,76 @@
+
+== Création de 'Ecriture' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118637"}},"extensions":{"request_id":"9269454d-9da6-9871-9354-a53ca9d3a424"}}
+
+== Création de 'Tournage' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118719"}},"extensions":{"request_id":"01535f1b-ec0d-9154-8af6-875c3f22b12c"}}
+
+== Création de 'Montage' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118776"}},"extensions":{"request_id":"2ef4ac8e-0c70-9b10-a33b-530e289ff9eb"}}
+
+== Création de 'Relecture' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118821"}},"extensions":{"request_id":"10ce74ae-b8ee-9377-a86e-a619eb1a6b8f"}}
+
+== Création de 'Vignette' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118862"}},"extensions":{"request_id":"28fbe863-3088-9786-b7c1-e28c8d1f46d5"}}
+
+== Création de 'Mise en ligne' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118894"}},"extensions":{"request_id":"6726ca5a-c4b1-92f4-bfa0-df89fd3b631e"}}
+
+== Création de 'Publication' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288118929"}},"extensions":{"request_id":"30365a0b-a21a-950f-9713-4c373af3f68f"}}
+
+== Création de 'Devis signé' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474000"}},"extensions":{"request_id":"ecfa5b53-5841-97c3-a09c-0353bdfb6e96"}}
+
+== Création de 'Ecriture' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474128"}},"extensions":{"request_id":"151c5583-4e6c-965d-be7b-db46dff7f87c"}}
+
+== Création de 'Ecriture intégration' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474229"}},"extensions":{"request_id":"8a5c2e4d-8613-99ec-a7fe-a5c36623a865"}}
+
+== Création de 'Tournage' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474345"}},"extensions":{"request_id":"dedfe5b1-db0c-9082-974c-f2db02690403"}}
+
+== Création de 'Montage' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474465"}},"extensions":{"request_id":"2496ba07-dec8-9400-bcbb-c4fc460fca3f"}}
+
+== Création de 'Relecture' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474545"}},"extensions":{"request_id":"d4a393dd-a1e1-96bc-9c7a-1ad7c6dcdd1a"}}
+
+== Création de 'Envoie V1 à la marque' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474640"}},"extensions":{"request_id":"c02ff536-fc18-9e33-8e89-793f311af383"}}
+
+== Création de 'Envoie Vdef à la marque' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474733"}},"extensions":{"request_id":"151d64c1-06ad-96ca-aa79-5f0a79610ae0"}}
+
+== Création de 'Vignette' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474860"}},"extensions":{"request_id":"d38b81c3-5206-97f5-8dba-8a0163253885"}}
+
+== Création de 'Mise en ligne' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288474955"}},"extensions":{"request_id":"c336dd04-ad08-9861-9c64-9ddd1d1309b1"}}
+
+== Création de 'Publication' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288475061"}},"extensions":{"request_id":"ac746e5e-a1c2-9b47-9d85-7e62b984febc"}}
+
+== Création de 'Facturation' ==
+Status code : 200
+Response : {"data":{"create_item":{"id":"9288475158"}},"extensions":{"request_id":"f3bdd6d2-4994-9b55-8ef0-d62f3e4d9726"}}
