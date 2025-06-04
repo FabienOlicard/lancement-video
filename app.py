@@ -31,6 +31,13 @@ SLACK_USERS = {
     "Fanny": "U07KFTMRC1X"
 }
 
+CHANNEL_COLORS = {
+    "Chaîne Principale": "#D96FA2",
+    "Chaîne Secondaire": "#76C7F0",
+    "Ckankonjoue": "#A68FD9",
+    "Casse-Tête": "#F5E27C"
+}
+
 TEMPLATE = '''
 <!doctype html>
 <title>Lancement Vidéo</title>
@@ -87,11 +94,11 @@ name_to_id = {
 }
 
 
-def create_group(board_id, group_name):
+def create_group(board_id, group_name, color_hex):
     query = {
         "query": f'''
         mutation {{
-            create_group (board_id: "{board_id}", group_name: "{group_name}") {{
+            create_group (board_id: "{board_id}", group_name: "{group_name}", color: "{color_hex}") {{
                 id
             }}
         }}
@@ -101,12 +108,12 @@ def create_group(board_id, group_name):
     return response.json()
 
 
-def create_item(board_id, group_id, name, start_date, end_date, assignees_ids):
+def create_item(board_id, group_id, name, start_date, end_date, assignees_ids, status_index):
     column_values = json.dumps({
         "person": {
             "personsAndTeams": [{"id": uid, "kind": "person"} for uid in assignees_ids]
         },
-        "status": {"index": 0},
+        "status": {"index": status_index},
         "timeline": {"from": start_date, "to": end_date}
     })
 
@@ -147,7 +154,7 @@ def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
         f"👉 Voici le lien direct dans ton appli (si tu es sur ton tel) : {link_app}\n"
         f"Merci de vérifier les dates de tes tâches et de les modifier rapidement si besoin.\n"
         f"Toute modification de planning ou dépassement doit être signalé à Fanny."
-        f" (Ceci est particulièrement vraie pour les V1 et VDEF des partenariats)"
+        f" (Ceci est particulièrement vrai pour les V1 et VDEF des partenariats)"
     )
     payload = {
         "channel": user_id,
@@ -159,7 +166,7 @@ def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
 def comment_on_monday_item(item_id, task_name):
     base_message = "🔔 Merci de vérifier la date de cette tâche et de la modifier si besoin."
     if "V1" in task_name or "Vdef" in task_name:
-        base_message += " Toute dépassement sur cette étape doit être signalé au plus tôt à Fanny."
+        base_message += " Tout dépassement sur cette étape doit être signalé au plus tôt à Fanny."
 
     query = {
         "query": '''
@@ -183,25 +190,30 @@ def index():
         title = request.form['title']
         date_str = request.form['date']
         channel = request.form['channel']
-        partner = request.form['partner'] == "Oui"
+        partner = request.form['partner'].startswith("Oui")
 
         sortie = datetime.strptime(date_str, "%d-%m-%Y")
         group_name = f"{channel} - {title}"
+        color = CHANNEL_COLORS.get(channel, "#CCCCCC")
 
-        group_creation = create_group(MONDAY_BOARD_ID, group_name)
+        group_creation = create_group(MONDAY_BOARD_ID, group_name, color)
         group_id = group_creation.get("data", {}).get("create_group", {}).get("id")
 
-        task_set = SET_B if partner else SET_A
+        base_tasks = SET_B if partner else SET_A
+        full_task_list = [("Vérification du tableau", ["Fanny"], -30, 2)] + [
+            (name, people, delta, 4) for name, people, delta in base_tasks
+        ]
+
         notified_users = set()
 
-        for task, people, delta in task_set:
+        for task, people, delta, status_index in full_task_list:
             date_cible = sortie + timedelta(days=delta)
             start = (date_cible - timedelta(days=1)).strftime("%Y-%m-%d")
             end = date_cible.strftime("%Y-%m-%d")
             ids = [name_to_id[n] for n in people]
             slack_ids = [(n, SLACK_USERS[n]) for n in people if n in SLACK_USERS]
 
-            item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids)
+            item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids, status_index)
             comment_on_monday_item(item_id, task)
 
             for name, sid in slack_ids:
@@ -243,7 +255,6 @@ def fin():
     '''
 
 
-# ✅ Ligne modifiée pour Render ici :
 if __name__ == '__main__':
     print("➡️ Flask démarre sur http://0.0.0.0:5000")
     app.run(debug=True, host="0.0.0.0", port=5000)
