@@ -99,12 +99,12 @@ def create_group(board_id, group_name):
     response = requests.post("https://api.monday.com/v2", json=query, headers=HEADERS)
     return response.json()
 
-def create_item(board_id, group_id, name, start_date, end_date, assignees_ids, status_index):
+def create_item(board_id, group_id, name, start_date, end_date, assignees_ids):
     column_values = json.dumps({
         "person": {
             "personsAndTeams": [{"id": uid, "kind": "person"} for uid in assignees_ids]
         },
-        "status": {"index": status_index},
+        "status": {"label": "A FAIRE"},
         "timeline": {"from": start_date, "to": end_date}
     })
 
@@ -195,21 +195,18 @@ def index():
         group_id = group_creation.get("data", {}).get("create_group", {}).get("id")
 
         base_tasks = SET_B if partner else SET_A
-        full_task_list = [("Vérification du tableau", ["Fanny"], -30, 2)] + [
-            (name, people, delta, 1) for name, people, delta in base_tasks
-        ]
+        full_task_list = [("Vérification du tableau", ["Fanny"], -30)] + base_tasks
 
         notified_users = set()
 
-        for task_data in full_task_list:
-            task, people, delta, status_index = task_data
+        for task, people, delta in full_task_list:
             date_cible = sortie + timedelta(days=delta)
             start = (date_cible - timedelta(days=1)).strftime("%Y-%m-%d")
             end = date_cible.strftime("%Y-%m-%d")
             ids = [name_to_id[n] for n in people]
             slack_ids = [(n, SLACK_USERS[n]) for n in people if n in SLACK_USERS]
 
-            item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids, status_index)
+            item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids)
 
             if item_id:
                 comment_on_monday_item(item_id, task)
