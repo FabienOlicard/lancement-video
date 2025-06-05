@@ -31,11 +31,11 @@ SLACK_USERS = {
     "Fanny": "U07KFTMRC1X"
 }
 
-CHANNEL_COLORS = {
-    "Chaîne Principale": "#D96FA2",
-    "Chaîne Secondaire": "#76C7F0",
-    "Ckankonjoue": "#A68FD9",
-    "Casse-Tête": "#F5E27C"
+GROUP_COLORS = {
+    "Chaîne Principale": "dark-pink",
+    "Chaîne Secondaire": "light-blue",
+    "Ckankonjoue": "purple",
+    "Casse-Tête": "yellow"
 }
 
 TEMPLATE = '''
@@ -94,11 +94,11 @@ name_to_id = {
 }
 
 
-def create_group(board_id, group_name, color_hex):
+def create_group(board_id, group_name, color=None):
     query = {
         "query": f'''
         mutation {{
-            create_group (board_id: "{board_id}", group_name: "{group_name}", color: "{color_hex}") {{
+            create_group (board_id: "{board_id}", group_name: "{group_name}"{f', group_color: {json.dumps(color)}' if color else ''}) {{
                 id
             }}
         }}
@@ -141,6 +141,9 @@ def create_item(board_id, group_id, name, start_date, end_date, assignees_ids, s
     response = requests.post("https://api.monday.com/v2", json=query, headers=HEADERS)
     data = response.json()
     item_id = data.get("data", {}).get("create_item", {}).get("id")
+    if item_id is None:
+        print("❌ Erreur lors de la création de l'item :", name)
+        print("➡️ Réponse complète :", json.dumps(data, indent=2))
     return item_id
 
 
@@ -166,7 +169,7 @@ def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
 def comment_on_monday_item(item_id, task_name):
     base_message = "🔔 Merci de vérifier la date de cette tâche et de la modifier si besoin."
     if "V1" in task_name or "Vdef" in task_name:
-        base_message += " Tout dépassement sur cette étape doit être signalé au plus tôt à Fanny."
+        base_message += " Toute dépassement sur cette étape doit être signalé au plus tôt à Fanny."
 
     query = {
         "query": '''
@@ -194,7 +197,7 @@ def index():
 
         sortie = datetime.strptime(date_str, "%d-%m-%Y")
         group_name = f"{channel} - {title}"
-        color = CHANNEL_COLORS.get(channel, "#CCCCCC")
+        color = GROUP_COLORS.get(channel)
 
         group_creation = create_group(MONDAY_BOARD_ID, group_name, color)
         group_id = group_creation.get("data", {}).get("create_group", {}).get("id")
@@ -214,12 +217,15 @@ def index():
             slack_ids = [(n, SLACK_USERS[n]) for n in people if n in SLACK_USERS]
 
             item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids, status_index)
-            comment_on_monday_item(item_id, task)
 
-            for name, sid in slack_ids:
-                if sid not in notified_users:
-                    notify_user_on_slack(sid, group_name, date_str, name, group_id)
-                    notified_users.add(sid)
+            if item_id:
+                comment_on_monday_item(item_id, task)
+                for name, sid in slack_ids:
+                    if sid not in notified_users:
+                        notify_user_on_slack(sid, group_name, date_str, name, group_id)
+                        notified_users.add(sid)
+            else:
+                print(f"❌ Tâche '{task}' non créée.")
 
         slack_message = {
             "text": f"🚀 Nouvelle vidéo programmée sur Monday : *{group_name}* (sortie le {date_str}). Merci aux personnes concernées de valider leurs tâches sur MONDAY."
