@@ -31,13 +31,6 @@ SLACK_USERS = {
     "Fanny": "U07KFTMRC1X"
 }
 
-GROUP_COLORS = {
-    "Chaîne Principale": "dark-pink",
-    "Chaîne Secondaire": "light-blue",
-    "Ckankonjoue": "purple",
-    "Casse-Tête": "yellow"
-}
-
 TEMPLATE = '''
 <!doctype html>
 <title>Lancement Vidéo</title>
@@ -93,12 +86,20 @@ name_to_id = {
     "Denis": 17889986
 }
 
+def create_group(board_id, group_name):
+    color_map = {
+        "Chaîne Principale": "dark-pink",
+        "Chaîne Secondaire": "sky-blue",
+        "Ckankonjoue": "purple",
+        "Casse-Tête": "yellow"
+    }
+    channel_name = group_name.split(" - ")[0]
+    color = color_map.get(channel_name, "gray")
 
-def create_group(board_id, group_name, color=None):
     query = {
         "query": f'''
         mutation {{
-            create_group (board_id: "{board_id}", group_name: "{group_name}"{f', group_color: {json.dumps(color)}' if color else ''}) {{
+            create_group (board_id: "{board_id}", group_name: "{group_name}", color: {json.dumps(color)}) {{
                 id
             }}
         }}
@@ -106,7 +107,6 @@ def create_group(board_id, group_name, color=None):
     }
     response = requests.post("https://api.monday.com/v2", json=query, headers=HEADERS)
     return response.json()
-
 
 def create_item(board_id, group_id, name, start_date, end_date, assignees_ids, status_index):
     column_values = json.dumps({
@@ -139,13 +139,19 @@ def create_item(board_id, group_id, name, start_date, end_date, assignees_ids, s
     }
 
     response = requests.post("https://api.monday.com/v2", json=query, headers=HEADERS)
-    data = response.json()
-    item_id = data.get("data", {}).get("create_item", {}).get("id")
-    if item_id is None:
-        print("❌ Erreur lors de la création de l'item :", name)
-        print("➡️ Réponse complète :", json.dumps(data, indent=2))
-    return item_id
+    try:
+        data = response.json()
+    except Exception as e:
+        print("❌ Erreur JSON dans create_item:", e)
+        print("Réponse brute:", response.text)
+        return None
 
+    if "errors" in data:
+        print("❌ Erreur API dans create_item:", data["errors"])
+        return None
+
+    item_id = data.get("data", {}).get("create_item", {}).get("id")
+    return item_id
 
 def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
     link_browser = f"https://sherlocks-mind-company.monday.com/boards/{MONDAY_BOARD_ID}?openGroup={group_id}"
@@ -165,11 +171,14 @@ def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
     }
     requests.post("https://slack.com/api/chat.postMessage", headers=SLACK_HEADERS, json=payload)
 
-
 def comment_on_monday_item(item_id, task_name):
     base_message = "🔔 Merci de vérifier la date de cette tâche et de la modifier si besoin."
     if "V1" in task_name or "Vdef" in task_name:
         base_message += " Toute dépassement sur cette étape doit être signalé au plus tôt à Fanny."
+
+    if item_id is None:
+        print("⚠️ Aucun item_id fourni pour commenter la tâche:", task_name)
+        return
 
     query = {
         "query": '''
@@ -186,7 +195,6 @@ def comment_on_monday_item(item_id, task_name):
     }
     requests.post("https://api.monday.com/v2", json=query, headers=HEADERS)
 
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -197,9 +205,8 @@ def index():
 
         sortie = datetime.strptime(date_str, "%d-%m-%Y")
         group_name = f"{channel} - {title}"
-        color = GROUP_COLORS.get(channel)
 
-        group_creation = create_group(MONDAY_BOARD_ID, group_name, color)
+        group_creation = create_group(MONDAY_BOARD_ID, group_name)
         group_id = group_creation.get("data", {}).get("create_group", {}).get("id")
 
         base_tasks = SET_B if partner else SET_A
@@ -217,15 +224,12 @@ def index():
             slack_ids = [(n, SLACK_USERS[n]) for n in people if n in SLACK_USERS]
 
             item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids, status_index)
+            comment_on_monday_item(item_id, task)
 
-            if item_id:
-                comment_on_monday_item(item_id, task)
-                for name, sid in slack_ids:
-                    if sid not in notified_users:
-                        notify_user_on_slack(sid, group_name, date_str, name, group_id)
-                        notified_users.add(sid)
-            else:
-                print(f"❌ Tâche '{task}' non créée.")
+            for name, sid in slack_ids:
+                if sid not in notified_users:
+                    notify_user_on_slack(sid, group_name, date_str, name, group_id)
+                    notified_users.add(sid)
 
         slack_message = {
             "text": f"🚀 Nouvelle vidéo programmée sur Monday : *{group_name}* (sortie le {date_str}). Merci aux personnes concernées de valider leurs tâches sur MONDAY."
@@ -247,7 +251,6 @@ def index():
 
     return render_template_string(TEMPLATE)
 
-
 @app.route('/fin')
 def fin():
     return '''
@@ -259,7 +262,6 @@ def fin():
             <button type="submit">Oups, j'ai oublié un tableau pour une vidéo</button>
         </form>
     '''
-
 
 if __name__ == '__main__':
     print("➡️ Flask démarre sur http://0.0.0.0:5000")
