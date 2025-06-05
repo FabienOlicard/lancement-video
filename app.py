@@ -196,7 +196,7 @@ def index():
 
         base_tasks = SET_B if partner else SET_A
         full_task_list = [("Vérification du tableau", ["Fanny"], -30, 2)] + [
-            (name, people, delta, 3) for name, people, delta in base_tasks
+            (name, people, delta, 1) for name, people, delta in base_tasks
         ]
 
         notified_users = set()
