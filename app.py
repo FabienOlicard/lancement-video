@@ -87,19 +87,10 @@ name_to_id = {
 }
 
 def create_group(board_id, group_name):
-    color_map = {
-        "Chaîne Principale": "dark-pink",
-        "Chaîne Secondaire": "sky-blue",
-        "Ckankonjoue": "purple",
-        "Casse-Tête": "yellow"
-    }
-    channel_name = group_name.split(" - ")[0]
-    color = color_map.get(channel_name, "gray")
-
     query = {
         "query": f'''
         mutation {{
-            create_group (board_id: "{board_id}", group_name: "{group_name}", color: {json.dumps(color)}) {{
+            create_group (board_id: "{board_id}", group_name: "{group_name}") {{
                 id
             }}
         }}
@@ -141,17 +132,11 @@ def create_item(board_id, group_id, name, start_date, end_date, assignees_ids, s
     response = requests.post("https://api.monday.com/v2", json=query, headers=HEADERS)
     try:
         data = response.json()
+        return data.get("data", {}).get("create_item", {}).get("id")
     except Exception as e:
-        print("❌ Erreur JSON dans create_item:", e)
-        print("Réponse brute:", response.text)
+        print("Erreur create_item:", e)
+        print("Réponse:", response.text)
         return None
-
-    if "errors" in data:
-        print("❌ Erreur API dans create_item:", data["errors"])
-        return None
-
-    item_id = data.get("data", {}).get("create_item", {}).get("id")
-    return item_id
 
 def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
     link_browser = f"https://sherlocks-mind-company.monday.com/boards/{MONDAY_BOARD_ID}?openGroup={group_id}"
@@ -163,7 +148,7 @@ def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
         f"👉 Voici le lien direct dans ton appli (si tu es sur ton tel) : {link_app}\n"
         f"Merci de vérifier les dates de tes tâches et de les modifier rapidement si besoin.\n"
         f"Toute modification de planning ou dépassement doit être signalé à Fanny."
-        f" (Ceci est particulièrement vrai pour les V1 et VDEF des partenariats)"
+        f" (Ceci est particulièrement vraie pour les V1 et VDEF des partenariats)"
     )
     payload = {
         "channel": user_id,
@@ -172,13 +157,13 @@ def notify_user_on_slack(user_id, group_name, date_str, first_name, group_id):
     requests.post("https://slack.com/api/chat.postMessage", headers=SLACK_HEADERS, json=payload)
 
 def comment_on_monday_item(item_id, task_name):
+    if not item_id:
+        print(f"Impossible de commenter l'item car item_id est None pour la tâche {task_name}")
+        return
+
     base_message = "🔔 Merci de vérifier la date de cette tâche et de la modifier si besoin."
     if "V1" in task_name or "Vdef" in task_name:
         base_message += " Toute dépassement sur cette étape doit être signalé au plus tôt à Fanny."
-
-    if item_id is None:
-        print("⚠️ Aucun item_id fourni pour commenter la tâche:", task_name)
-        return
 
     query = {
         "query": '''
