@@ -172,7 +172,8 @@ def comment_on_monday_item(item_id, task_name):
             id
           }
         }
-        ''',
+        '''
+,
         "variables": {
             "item_id": int(item_id),
             "body": base_message
@@ -201,7 +202,8 @@ def index():
 
         notified_users = set()
 
-        for task, people, delta, status_index in full_task_list:
+        for task_data in full_task_list:
+            task, people, delta, status_index = task_data
             date_cible = sortie + timedelta(days=delta)
             start = (date_cible - timedelta(days=1)).strftime("%Y-%m-%d")
             end = date_cible.strftime("%Y-%m-%d")
@@ -209,12 +211,14 @@ def index():
             slack_ids = [(n, SLACK_USERS[n]) for n in people if n in SLACK_USERS]
 
             item_id = create_item(MONDAY_BOARD_ID, group_id, task, start, end, ids, status_index)
-            comment_on_monday_item(item_id, task)
 
-            for name, sid in slack_ids:
-                if sid not in notified_users:
-                    notify_user_on_slack(sid, group_name, date_str, name, group_id)
-                    notified_users.add(sid)
+            if item_id:
+                comment_on_monday_item(item_id, task)
+
+                for name, sid in slack_ids:
+                    if sid not in notified_users:
+                        notify_user_on_slack(sid, group_name, date_str, name, group_id)
+                        notified_users.add(sid)
 
         slack_message = {
             "text": f"🚀 Nouvelle vidéo programmée sur Monday : *{group_name}* (sortie le {date_str}). Merci aux personnes concernées de valider leurs tâches sur MONDAY."
